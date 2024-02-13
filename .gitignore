@@ -1,0 +1,8 @@
+/Data/
+/.idea/
+/Preprocessing
+/Experiments
+*.dat
+*.o
+*.so
+*.dll
