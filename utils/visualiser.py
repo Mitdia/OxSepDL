@@ -8,11 +8,10 @@ from cycler import cycler
 from utils.preprocessing import find_region_of_main_peak
 from utils.funcgen import create_oxide_function
 
-
 monochrome_settings = cycler('color', ['k']) * cycler('linestyle', ['-', '--', ':']) * cycler('marker', ['^', ',', '.'])
 
 
-def plot_loss_history(loss_history, verbose=False, filename="LossHistory.png"):
+def plot_loss_history(loss_history, verbose: bool = False, filename: str = "LossHistory.png"):
     plt.plot(loss_history.steps, [loss.sum() for loss in loss_history.loss_train], label="train loss")
     plt.xlabel("Steps")
     plt.ylabel("Cumulative loss")
@@ -25,7 +24,8 @@ def plot_loss_history(loss_history, verbose=False, filename="LossHistory.png"):
         plt.show()
 
 
-def plot_result(model, oxides, references, t_shift, verbose=False, filename="Result.png", monochrome=False):
+def plot_result(model, oxides, references, t_shift: float,
+                verbose: bool = False, filename: str = "Result.png", monochrome: bool = False):
     num_oxides = len(oxides)
     t_grid = dde.geometry.Interval(0, 800).uniform_points(1000, False)
     result = model.predict(t_grid)
@@ -68,7 +68,7 @@ def print_final_losses(loss_history, num_oxides, num_references,
     )
 
 
-def plot_ode_residual(model, oxide_params, verbose=False, filename="ODELoss.png"):
+def plot_ode_residual(model, oxide_params: dict, verbose: bool = False, filename="ODELoss.png"):
     num_oxides = len(oxide_params)
     t_grid = dde.geometry.Interval(0, 800).uniform_points(2000, False)
     full_error = model.predict(t_grid, operator=model.data.pde)
@@ -92,7 +92,7 @@ def plot_ode_residual(model, oxide_params, verbose=False, filename="ODELoss.png"
         plt.show()
 
 
-def plot_reference_error(model, num_oxides, references, t_shift, loss_history, ref_loss_weight, melting_temp,
+def plot_reference_error(model, num_oxides, references, t_shift: float, loss_history, ref_loss_weight, melting_temp,
                          verbose=False, filename="ReferenceLoss.png", plot_references=False):
     num_references = len(references)
     plt.figure(figsize=(20, 8))
@@ -121,8 +121,8 @@ def plot_reference_error(model, num_oxides, references, t_shift, loss_history, r
         plt.show()
 
 
-def plot_main_peak_error(model, references, t_shift, melting_temp,
-                         verbose=False, filename="ReferenceLoss.png", plot_references=False):
+def plot_main_peak_error(model, references, t_shift: float, melting_temp: float,
+                         verbose: bool = False, filename="ReferenceLoss.png", plot_references=False):
     roi_beg, roi_end = find_region_of_main_peak(references)
     plt.figure(figsize=(20, 8))
     for i, (reference, temp) in enumerate(references[:]):
@@ -146,8 +146,8 @@ def plot_main_peak_error(model, references, t_shift, melting_temp,
         plt.show()
 
 
-def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params, options,
-                                            verbose=False, filename="IdealFunctionsForPredictedVariables.png"):
+def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params: dict, options: dict,
+                                            verbose: bool = False, filename="IdealFunctionsForPredictedVariables.png"):
     num_oxides = len(oxide_params)
     t_shift = options["t_shift"]
     record = [elem.item() for elem in trainable_variables]
@@ -184,7 +184,7 @@ def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params, o
         plt.show()
 
 
-def plot_tbeg_loss(model, oxide_params, t_shift, verbose=False, filename="TbegLoss.png"):
+def plot_tbeg_loss(model, oxide_params, t_shift: float, verbose: bool = False, filename="TbegLoss.png"):
     t_grid = dde.geometry.Interval(0, 800).uniform_points(2000, False)
     result = model.predict(t_grid)
 
@@ -209,7 +209,6 @@ def plot_tbeg_loss(model, oxide_params, t_shift, verbose=False, filename="TbegLo
 
 def plot_all(model, oxide_params, references, loss_history, trainable_variables, options,
              experiment_path, verbose=False):
-
     t_shift = options["t_shift"]
     melting_temp = options["melting_temp"]
     plot_loss_history(loss_history, verbose, os.path.join(experiment_path, "LossHistory.png"))
@@ -217,8 +216,8 @@ def plot_all(model, oxide_params, references, loss_history, trainable_variables,
     plot_ode_residual(model, oxide_params, verbose, os.path.join(experiment_path, "ODELoss.png"))
     plot_reference_error(model, len(oxide_params), references, t_shift, loss_history, options["ref_loss_weight"],
                          melting_temp, verbose, os.path.join(experiment_path, "ReferenceLoss.png"))
-    plot_main_peak_error(model, references, t_shift, verbose,
-                         melting_temp, os.path.join(experiment_path, "MaxPeakLoss.png"))
+    plot_main_peak_error(model, references, t_shift, melting_temp,
+                         verbose, os.path.join(experiment_path, "MaxPeakLoss.png"))
     plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params, options, verbose,
                                             os.path.join(experiment_path, "IdealFunctionsForPredictedVars.png"))
-    plot_tbeg_loss(model, oxide_params, verbose, t_shift, os.path.join(experiment_path, "TBegLoss.png"))
+    plot_tbeg_loss(model, oxide_params, t_shift, verbose, os.path.join(experiment_path, "TBegLoss.png"))
