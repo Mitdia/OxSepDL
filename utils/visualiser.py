@@ -52,11 +52,12 @@ def plot_result(model, oxides, references, t_shift, verbose=False, filename="Res
         plt.show()
 
 
-def print_final_losses(loss_history, num_oxides, num_references):
-    mean_ode_loss = np.mean(loss_history.loss_test[-1][:num_oxides]) / 1e+5
-    mean_tbeg_loss = np.mean(loss_history.loss_test[-1][num_oxides:2 * num_oxides]) / 1e+3
-    mean_ref_loss = np.mean(loss_history.loss_test[-1][2 * num_oxides::2]) / 5e+0 * num_references
-    mean_mpeak_loss = np.mean(loss_history.loss_test[-1][2 * num_oxides + 1::2]) / 1e+2 * num_references
+def print_final_losses(loss_history, num_oxides, num_references,
+                       ode_loss_weight, tbeg_loss_weight, ref_loss_weight, mpeak_loss_weight):
+    mean_ode_loss = np.mean(loss_history.loss_test[-1][:num_oxides]) / ode_loss_weight
+    mean_tbeg_loss = np.mean(loss_history.loss_test[-1][num_oxides:2 * num_oxides]) / tbeg_loss_weight
+    mean_ref_loss = np.mean(loss_history.loss_test[-1][2 * num_oxides::2]) / ref_loss_weight * num_references
+    mean_mpeak_loss = np.mean(loss_history.loss_test[-1][2 * num_oxides + 1::2]) / mpeak_loss_weight * num_references
     print(
         f"Predicted peaks and references. "
         f"Seed: {dde.config.random_seed}. "
@@ -91,42 +92,55 @@ def plot_ode_residual(model, oxide_params, verbose=False, filename="ODELoss.png"
         plt.show()
 
 
-def plot_reference_error(model, num_oxides, references, t_shift, loss_history,
+def plot_reference_error(model, num_oxides, references, t_shift, loss_history, ref_loss_weight, melting_temp,
                          verbose=False, filename="ReferenceLoss.png", plot_references=False):
     num_references = len(references)
-    roi_beg, roi_end = find_region_of_main_peak(references)
-    fig, axs = plt.subplots(nrows=2, ncols=1, figsize=(20, 16))
+    plt.figure(figsize=(20, 8))
     t_grid = dde.geometry.Interval(100, 800).uniform_points(2000, False)
     predicted = model.predict(t_grid)
-    axs[0].plot(t_grid, predicted[:, num_oxides], label="Predicted solution")
+    plt.plot(t_grid, predicted[:, num_oxides], label="Predicted solution")
     for i, (reference, temp) in enumerate(references[:]):
-        mask = temp > 1500
+        mask = temp > melting_temp
         temp_shifted = temp - t_shift
         grid = np.expand_dims(temp_shifted[mask], -1)
         predicted_values_for_reference = torch.Tensor(model.predict(grid))
         error = model.data.bcs[2 * i].error(0, 0, predicted_values_for_reference.cuda(), 0, len(temp_shifted[mask]))
         mean_error = torch.mean((torch.Tensor(reference[mask]) - predicted_values_for_reference[:, num_oxides]) ** 2)
-        mean_error_calculated = loss_history.loss_test[-1][2 * num_oxides + 2 * i] / (5e+0 / num_references)
+        mean_error_calculated = loss_history.loss_test[-1][2 * num_oxides + 2 * i] / (ref_loss_weight / num_references)
         if plot_references:
-            axs[0].plot(grid, reference[mask], label=f"{i + 1} reference")
-        axs[0].plot(grid, np.abs(error.cpu()),
-                    label=f"{i + 1} reference loss: {mean_error} and calculated loss {mean_error_calculated}")
+            plt.plot(grid, reference[mask], label=f"{i + 1} reference")
+        plt.plot(grid, error.cpu(),
+                 label=f"{i + 1} reference loss: {mean_error:.4} and calculated loss {mean_error_calculated:.4}")
+    plt.legend()
+    plt.grid()
+    plt.title("Solution and references error")
+    plt.xlabel("Time")
+    plt.ylabel("Error")
+    plt.savefig(filename)
+    if verbose:
+        plt.show()
 
+
+def plot_main_peak_error(model, references, t_shift, melting_temp,
+                         verbose=False, filename="ReferenceLoss.png", plot_references=False):
+    roi_beg, roi_end = find_region_of_main_peak(references)
+    plt.figure(figsize=(20, 8))
+    for i, (reference, temp) in enumerate(references[:]):
+        mask = temp > melting_temp
+        temp_shifted = temp - t_shift
+        grid = np.expand_dims(temp_shifted[mask], -1)
         max_peak_grid = grid[roi_beg:roi_end + 1, :]
         predicted_values_for_main_peak = torch.Tensor(model.predict(max_peak_grid))
         main_peak_error = model.data.bcs[2 * i + 1].error(0, 0, predicted_values_for_main_peak.cuda(), 0,
                                                           len(max_peak_grid))
-        axs[1].plot(max_peak_grid, main_peak_error.cpu(), label=f"{i + 1} reference main peak loss")
-    axs[0].legend()
-    axs[1].legend()
-    axs[0].grid()
-    axs[1].grid()
-    axs[0].set_title("Solution and references error")
-    axs[1].set_title("Solution and references error (region of main peak)")
-    axs[0].set_xlabel("Time")
-    axs[1].set_xlabel("Time")
-    axs[0].set_ylabel("Error")
-    axs[1].set_ylabel("Error")
+        if plot_references:
+            plt.plot(max_peak_grid, references[mask][roi_beg:roi_end + 1, :], label=f"{i + 1} reference")
+        plt.plot(max_peak_grid, main_peak_error.cpu(), label=f"{i + 1} reference main peak loss")
+    plt.legend()
+    plt.grid()
+    plt.title("Solution and references error (region of main peak)")
+    plt.xlabel("Time")
+    plt.ylabel("Error")
     plt.savefig(filename)
     if verbose:
         plt.show()
@@ -141,7 +155,7 @@ def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params, o
     t_grid = np.linspace(0, 800, 1000)
     for i, (oxide_name, oxide) in enumerate(oxide_params.items()):
 
-        e_var = 8e+4
+        e_var = options["e_var_init"]
         k_var = e_var / oxide["Tm"] + np.log(e_var / oxide["Tm"] ** 2)
         oxide_init = create_oxide_function(k_var, e_var, 10, oxide["Tm"] - t_shift, t_shift=t_shift)
         values = oxide_init(t_grid)
@@ -170,12 +184,11 @@ def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params, o
         plt.show()
 
 
-def plot_tbeg_loss(model, oxide_params, verbose=False, filename="TbegLoss.png"):
+def plot_tbeg_loss(model, oxide_params, t_shift, verbose=False, filename="TbegLoss.png"):
     t_grid = dde.geometry.Interval(0, 800).uniform_points(2000, False)
     result = model.predict(t_grid)
 
     plt.figure(figsize=(10, 6))
-    t_shift = 1400
     for i, oxide_name in enumerate(oxide_params):
         modifier = np.array(
             torch.nn.functional.sigmoid(torch.tensor(t_grid - oxide_params[oxide_name]["Tb"] + t_shift)).to("cpu"))
@@ -198,11 +211,14 @@ def plot_all(model, oxide_params, references, loss_history, trainable_variables,
              experiment_path, verbose=False):
 
     t_shift = options["t_shift"]
+    melting_temp = options["melting_temp"]
     plot_loss_history(loss_history, verbose, os.path.join(experiment_path, "LossHistory.png"))
     plot_result(model, oxide_params, references, t_shift, verbose, os.path.join(experiment_path, "Result.png"))
     plot_ode_residual(model, oxide_params, verbose, os.path.join(experiment_path, "ODELoss.png"))
-    plot_reference_error(model, len(oxide_params), references, t_shift, loss_history,
-                         verbose, os.path.join(experiment_path, "ReferenceLoss.png"))
+    plot_reference_error(model, len(oxide_params), references, t_shift, loss_history, options["ref_loss_weight"],
+                         melting_temp, verbose, os.path.join(experiment_path, "ReferenceLoss.png"))
+    plot_main_peak_error(model, references, t_shift, verbose,
+                         melting_temp, os.path.join(experiment_path, "MaxPeakLoss.png"))
     plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params, options, verbose,
                                             os.path.join(experiment_path, "IdealFunctionsForPredictedVars.png"))
-    plot_tbeg_loss(model, oxide_params, verbose, os.path.join(experiment_path, "TBegLoss.png"))
+    plot_tbeg_loss(model, oxide_params, verbose, t_shift, os.path.join(experiment_path, "TBegLoss.png"))

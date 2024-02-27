@@ -43,6 +43,8 @@ def archive_important_files(experiment_path):
         "IdealFunctionsForPredictedVariables.png",
         "Result.png",
         "TbegLoss.png",
+        "ReferenceLoss.png",
+        "MaxPeakLoss.png",
         "movie.gif",
         "trainable_variables_history.gif",
         "test.dat",

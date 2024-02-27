@@ -121,10 +121,12 @@ options = {
     "mpeak_loss_weight": 1e-1,
     "iter_num": 100000,
     "decay": ("step", 5000, 0.9),
+    "e_var_init": 8e+4,
     "e_scale": 1e+5,
     "tmax_scale": 1e+1,
     "k_scale": 1e+1,
     "t_shift": 1400,
+    "melting_temp": 1500,
     "random_seed": config.random_seed,
 }
 

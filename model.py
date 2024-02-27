@@ -12,7 +12,7 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
 
     # initialize external trainable variables
     num_oxides = len(oxides)
-    e_estimates = [8e+4 for _ in range(num_oxides)]
+    e_estimates = [options["e_var_init"] for _ in range(num_oxides)]
     k_estimates = [e_estimates[j] / oxides[j]["Tm"] + np.log(e_estimates[j] / (oxides[j]["Tm"]) ** 2) for j in
                    range(num_oxides)]
     k_variables = [dde.Variable(k_estimates[j] / options["k_scale"], dtype=torch.double) for j in range(num_oxides)]
@@ -52,14 +52,14 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         oxide_functions_sum = torch.zeros_like(oxide_functions[0])
         for j in range(num_oxides):
             oxide_functions_sum += oxide_functions[j]
-        return torch.stack(oxide_functions + [oxide_functions_sum], axis=1).reshape(-1, num_oxides + 1)
+        return torch.stack(oxide_functions + [oxide_functions_sum]).reshape(-1, num_oxides + 1)
 
     geom = dde.geometry.Interval(0, 800)
 
     discrete_conditions = []
     roi_beg, roi_end = find_region_of_main_peak(solution_values_array)
     for solution, temp in solution_values_array:
-        mask = temp > 1500
+        mask = temp > options["melting_temp"]
         shifted_temp = temp - options["t_shift"]
         discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask], -1),
                                                        np.expand_dims(solution[mask], -1),
