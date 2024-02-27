@@ -42,7 +42,7 @@ def archive_important_files(experiment_path):
         "ODELoss.png",
         "IdealFunctionsForPredictedVariables.png",
         "Result.png",
-        "TbegLoss.png",
+        "TBegLoss.png",
         "ReferenceLoss.png",
         "MaxPeakLoss.png",
         "movie.gif",
