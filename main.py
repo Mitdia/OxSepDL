@@ -33,7 +33,7 @@ plot_all(model, oxide_params, solution_values_array, loss_history,
          external_trainable_variables, options, experiment_dir)
 animate_solution_history(os.path.join(experiment_dir, "movie.gif"), oxide_params, callbacks[-1])
 animate_trainable_variables_history(experiment_dir, os.path.join(experiment_dir, "trainable_variables_history.gif"),
-                                    oxide_params, options["direct_tmax"])
+                                    oxide_params, options)
 save_options(options, os.path.join(experiment_dir, "parameters.txt"))
 save_input_data(oxide_params, data_path_array, os.path.join(experiment_dir, "input_data.txt"))
 archive_important_files(experiment_dir)
