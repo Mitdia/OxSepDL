@@ -18,7 +18,7 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
     k_variables = [dde.Variable(k_estimates[j] / options["k_scale"], dtype=torch.double) for j in range(num_oxides)]
     t_max_variables = [dde.Variable(oxides[j]["Tm"] / options["tmax_scale"], dtype=torch.double) for j in
                        range(num_oxides)]
-    e_variables = [dde.Variable(np.sqrt(e_estimates[j] / options["e_scale"]), dtype=torch.double) for j in
+    e_variables = [dde.Variable(e_estimates[j] / options["e_scale"], dtype=torch.double) for j in
                    range(num_oxides)]
 
     def f(t, k, e):
@@ -52,7 +52,7 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         oxide_functions_sum = torch.zeros_like(oxide_functions[0])
         for j in range(num_oxides):
             oxide_functions_sum += oxide_functions[j]
-        return torch.stack(oxide_functions + [oxide_functions_sum]).reshape(-1, num_oxides + 1)
+        return torch.stack(oxide_functions + [oxide_functions_sum], axis=1).reshape(-1, num_oxides + 1)
 
     geom = dde.geometry.Interval(0, 800)
 
@@ -83,7 +83,7 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         external_trainable_variables = t_max_variables + e_variables
     else:
         external_trainable_variables = k_variables + e_variables
-    variable = dde.callbacks.VariableValue(external_trainable_variables, period=500,
+    variable = dde.callbacks.VariableValue(external_trainable_variables, period=50,
                                            filename=os.path.join(experiment_path, "variables.dat"))
     resampler = dde.callbacks.PDEPointResampler(period=1000)
     callbacks = [resampler, variable,
