@@ -109,7 +109,7 @@ def plot_reference_error(model, num_oxides, references, t_shift: float, loss_his
         mean_error_calculated = loss_history.loss_test[-1][2 * num_oxides + 2 * i] / (ref_loss_weight / num_references)
         if plot_references:
             plt.plot(grid, reference[mask], label=f"{i + 1} reference")
-        plt.plot(grid, error.cpu(),
+        plt.plot(grid, -error.cpu(),
                  label=f"{i + 1} reference loss: {mean_error:.4} and calculated loss {mean_error_calculated:.4}")
     plt.legend()
     plt.grid()
