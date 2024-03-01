@@ -4,7 +4,7 @@ import os
 from utils.visualiser import plot_all
 from options import options
 from model import model_multiple_solutions
-from imput_data_reader import get_oxide_params, read_data
+from input_data_reader import get_oxide_params, read_data
 from utils.animator import animate_solution_history, animate_trainable_variables_history
 from utils.saver import save_options, save_input_data, archive_important_files, setup_experiment
 
