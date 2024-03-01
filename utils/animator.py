@@ -84,7 +84,7 @@ def animate_trainable_variables_history(experiment_name, filename, oxides, optio
         for j, (_, oxide_to_update) in enumerate(oxides.items()):
             e_variable = (record[j + num_oxides]) * options["e_scale"]
             if options["direct_tmax"]:
-                t_max_var = record[j]
+                t_max_var = record[j] * options["tmax_scale"]
                 k_variable = e_variable / t_max_var + np.log(e_variable / t_max_var ** 2)
                 t_max_var -= options["t_shift"]
             else:
