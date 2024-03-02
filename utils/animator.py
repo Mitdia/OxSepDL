@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import torch
 from functools import partial
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -82,10 +83,12 @@ def animate_trainable_variables_history(experiment_name, filename, oxides, optio
     def update(frame):
         record = variables_history[frame]
         for j, (_, oxide_to_update) in enumerate(oxides.items()):
-            e_variable = (record[j + num_oxides]) * options["e_scale"]
+            e_variable = options["get_e"](torch.Tensor([record[j + num_oxides]]))
+            t_max_var = options["get_t_max"](torch.Tensor([record[j]]))
+            k_variable = options["get_k"](e_variable, t_max_var, torch.Tensor([record[j]])).item()
+            e_variable = e_variable.item()
+            t_max_var = t_max_var.item()
             if options["direct_tmax"]:
-                t_max_var = record[j] * options["tmax_scale"]
-                k_variable = e_variable / t_max_var + np.log(e_variable / t_max_var ** 2)
                 t_max_var -= options["t_shift"]
             else:
                 k_variable = record[j] * options["k_scale"]
@@ -93,7 +96,8 @@ def animate_trainable_variables_history(experiment_name, filename, oxides, optio
                                                                    oxide_to_update["Tm"] - t_shift, t_shift=t_shift)
                 new_values = oxide_ideal_non_normalised(t_grid)
                 t_max_var = t_grid[np.argmax(new_values)]
-            oxide_ideal = create_oxide_function(k_variable, e_variable, 10, t_max_var, t_shift=t_shift)
+            oxide_ideal = create_oxide_function(k_variable, e_variable,
+                                                10, t_max_var, t_shift=t_shift)
             new_values = oxide_ideal(t_grid)
             lines[j].set_data(t_grid, new_values)
         return lines

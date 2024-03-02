@@ -161,13 +161,15 @@ def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params: d
         values = oxide_init(t_grid)
         plt.plot(t_grid, values, label=f"Init {oxide_name}")
 
-        e_var = (record[i + num_oxides]) * options["e_scale"]
+        e_var = options["get_e"](torch.Tensor([record[i + num_oxides]]))
+        t_max_var = options["get_t_max"](torch.Tensor([record[i]]))
+        k_var = options["get_k"](e_var, t_max_var, torch.Tensor([record[i]])).item()
+        e_var = e_var.item()
+        t_max_var = t_max_var.item()
+
         if options["direct_tmax"]:
-            t_max_var = record[i] * options["tmax_scale"]
-            k_var = e_var / t_max_var + np.log(e_var / t_max_var ** 2)
             t_max_var -= t_shift
         else:
-            k_var = record[i] * options["k_scale"]
             oxide_ideal_non_normalised = create_oxide_function(k_var, e_var, 10, oxide["Tm"] - t_shift, t_shift=t_shift)
             values = oxide_ideal_non_normalised(t_grid)
             t_max_var = t_grid[np.argmax(values)]
