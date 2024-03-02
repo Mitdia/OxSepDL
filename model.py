@@ -2,6 +2,7 @@ import deepxde as dde
 import numpy as np
 import torch
 import os
+from torch.nn.functional import sigmoid
 from utils.preprocessing import find_region_of_main_peak
 from utils.callbacks import IntervalWithSmartResampling, SolutionHistory
 
@@ -18,7 +19,7 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
     k_variables = [dde.Variable(k_estimates[j] / options["k_scale"], dtype=torch.double) for j in range(num_oxides)]
     t_max_variables = [dde.Variable(oxides[j]["Tm"] / options["tmax_scale"], dtype=torch.double) for j in
                        range(num_oxides)]
-    e_variables = [dde.Variable(e_estimates[j] / options["e_scale"], dtype=torch.double) for j in
+    e_variables = [dde.Variable(np.log10(e_estimates[j]), dtype=torch.double) for j in
                    range(num_oxides)]
 
     def f(t, k, e):
@@ -31,21 +32,24 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
 
     def ode(t, v):
         """ode system: v'(t) = v(t)(df_t - exp(f(t)))"""
-        oxide_functions = [v[:, j:j + 1] for j in range(num_oxides)]
-        e_vars = [options["get_e"](e_variable) for e_variable in e_variables]
-        t_max_vars = [options["get_t_max"](t_max_variable) for t_max_variable in t_max_variables]
-        k_vars = [options["get_k"](e_vars[j], t_max_vars[j], k_variables[j]) for j in range(num_oxides)]
+        oxides_odes = []
+        initial_condition_checks = []
+        for j, oxide in enumerate(oxides):
+            oxide_function = v[:, j:j + 1]
+            e_var = options["get_e"](e_variables[j])
+            t_max_var = options["get_t_max"](t_max_variables[j])
+            k_var = options["get_k"](e_var, t_max_var, k_variables[j])
+            oxides_functions_derivative = dde.grad.jacobian(v, t, i=j, j=0)
+            modifier = df_t(t, e_var) - torch.exp(f(t, k_var, e_var))
+            oxides_ode = oxides_functions_derivative - oxide_function * modifier
+            oxides_odes.append(oxides_ode)
 
-        oxides_functions_derivatives = [dde.grad.jacobian(v, t, i=j, j=0) for j in range(num_oxides)]
-        modifiers = [df_t(t, e_vars[j]) - torch.exp(f(t, k_vars[j], e_vars[j])) for j in range(num_oxides)]
-        oxides_odes = [oxides_functions_derivatives[j] - oxide_functions[j] * modifiers[j] for j in range(num_oxides)]
+            modifier = sigmoid(t - oxide["Tb"] + options["t_shift"])
+            reversed_modifier = sigmoid(-t - oxide["Tb"] + 2 * oxide["Tm"] - options["t_shift"])
+            initial_condition_check = oxide_function * (1 - modifier * reversed_modifier)
+            initial_condition_checks.append(initial_condition_check)
 
-        lengthes = [abs(oxides[j]["Tb"] - options["t_shift"]) + 1 for j in range(num_oxides)]
-        modifiers = [torch.nn.functional.sigmoid(t - oxides[j]["Tb"] + options["t_shift"]) for j in range(num_oxides)]
-        initial_condition_check = [(oxide_functions[j] - oxide_functions[j] * modifiers[j]) / lengthes[j] for j in
-                                   range(len(oxide_functions))]
-
-        return oxides_odes + initial_condition_check
+        return oxides_odes + initial_condition_checks
 
     def transform_output(_, v):
         oxide_functions = [torch.exp(v[:, j:j + 1]) for j in range(num_oxides)]
@@ -83,9 +87,9 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         external_trainable_variables = t_max_variables + e_variables
     else:
         external_trainable_variables = k_variables + e_variables
-    variable = dde.callbacks.VariableValue(external_trainable_variables, period=50,
+    variable = dde.callbacks.VariableValue(external_trainable_variables, period=400,
                                            filename=os.path.join(experiment_path, "variables.dat"))
     resampler = dde.callbacks.PDEPointResampler(period=1000)
     callbacks = [resampler, variable,
-                 SolutionHistory(os.path.join(experiment_path, "SolutionHistory"), 0, 800, 100, period=50)]
+                 SolutionHistory(os.path.join(experiment_path, "SolutionHistory"), 0, 800, 100, period=400)]
     return model, external_trainable_variables, callbacks
