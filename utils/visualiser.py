@@ -191,11 +191,15 @@ def plot_tbeg_loss(model, oxide_params, t_shift: float, verbose: bool = False, f
     result = model.predict(t_grid)
 
     plt.figure(figsize=(10, 6))
-    for i, oxide_name in enumerate(oxide_params):
+    for i, (oxide_name, oxide) in enumerate(oxide_params):
         modifier = np.array(
-            torch.nn.functional.sigmoid(torch.tensor(t_grid - oxide_params[oxide_name]["Tb"] + t_shift)).to("cpu"))
-        plt.plot(t_grid, modifier, label=f"sigmoid for oxide: {oxide_name}")
-        plt.plot(t_grid, (result[:, i:i + 1] * (1 - modifier)) ** 2,
+            torch.nn.functional.sigmoid(torch.tensor(t_grid - oxide["Tb"] + t_shift)).to("cpu"))
+        reversed_modifier = np.array(
+            torch.nn.functional.sigmoid(torch.tensor(-t_grid - oxide["Tb"] + 2 * oxide["Tm"] - t_shift)).to(
+                "cpu"), dtype="float64")
+        full_modifier = 1 - modifier * reversed_modifier
+        plt.plot(t_grid, full_modifier, label=f"modifier: {oxide_name}")
+        plt.plot(t_grid, (result[:, i:i + 1] * full_modifier) ** 2,
                  label=f"initial conditions loss for oxide: {oxide_name}")
 
     plt.xlabel("time")
