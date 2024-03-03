@@ -84,7 +84,7 @@ def animate_trainable_variables_history(experiment_name, filename, oxides, optio
         record = variables_history[frame]
         for j, (_, oxide_to_update) in enumerate(oxides.items()):
             e_variable = options["get_e"](torch.Tensor([record[j + num_oxides]]))
-            t_max_var = options["get_t_max"](torch.Tensor([record[j]]))
+            t_max_var = options["get_t_max"](torch.Tensor([record[j]]), t_max_init=oxide_to_update["Tm"])
             k_variable = options["get_k"](e_variable, t_max_var, torch.Tensor([record[j]])).item()
             e_variable = e_variable.item()
             t_max_var = t_max_var.item()

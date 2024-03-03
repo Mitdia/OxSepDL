@@ -162,7 +162,7 @@ def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params: d
         plt.plot(t_grid, values, label=f"Init {oxide_name}")
 
         e_var = options["get_e"](torch.Tensor([record[i + num_oxides]]))
-        t_max_var = options["get_t_max"](torch.Tensor([record[i]]))
+        t_max_var = options["get_t_max"](torch.Tensor([record[i]]), t_max_init=oxide["Tm"])
         k_var = options["get_k"](e_var, t_max_var, torch.Tensor([record[i]])).item()
         e_var = e_var.item()
         t_max_var = t_max_var.item()

@@ -55,12 +55,12 @@ def get_e(e_var, e_scale):
     Returns
     _______
     E : double
-        E = e_var * e_scale
+        E = 10 ^ (5 + e_var)
     """
-    return e_var * e_scale
+    return 10 ** (5 + e_var)
 
 
-def get_t_max(t_max, tmax_scale):
+def get_t_max(t_max, tmax_scale, t_max_init=None):
     """
     Calculate temperature of maximum extortion from the trainable variable t_max
     __________
@@ -76,7 +76,7 @@ def get_t_max(t_max, tmax_scale):
     T_max : double
         T_max = t_max * tmax_scale
     """
-    return t_max * tmax_scale
+    return t_max_init + t_max * tmax_scale
 
 
 def temperature(t, t_shift):
@@ -113,17 +113,17 @@ def temperature_derivative(_):
 
 
 options = {
-    "direct_tmax": False,
-    "learning_rate": 2e-5,
+    "direct_tmax": True,
+    "learning_rate": 1e-5,
     "res_loss_weight": 1e+4,
-    "tbeg_loss_weight": 1e-1,
-    "ref_loss_weight": 1e+0,
-    "mpeak_loss_weight": 1e-1,
-    "iter_num": 100000,
-    "decay": ("step", 5000, 0.9),
-    "e_var_init": 8e+4,
-    "e_scale": 1e+5,
-    "tmax_scale": 1e+1,
+    "tbeg_loss_weight": 1e+4,
+    "ref_loss_weight": 5e+0,
+    "mpeak_loss_weight": 0e-1,
+    "iter_num": 150000,
+    "decay": ("step", 50000, 0.9),
+    "e_var_init": 1e+5,
+    "e_scale": 5,
+    "tmax_scale": 5e+1,
     "k_scale": 1e+1,
     "t_shift": 1400,
     "melting_temp": 1500,
