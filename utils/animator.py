@@ -91,7 +91,6 @@ def animate_trainable_variables_history(experiment_name, filename, oxides, optio
             if options["direct_tmax"]:
                 t_max_var -= options["t_shift"]
             else:
-                k_variable = record[j] * options["k_scale"]
                 oxide_ideal_non_normalised = create_oxide_function(k_variable, e_variable, 10,
                                                                    oxide_to_update["Tm"] - t_shift, t_shift=t_shift)
                 new_values = oxide_ideal_non_normalised(t_grid)
