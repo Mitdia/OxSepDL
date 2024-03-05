@@ -40,7 +40,7 @@ def save_input_data(oxide_params, data_path_array, filename):
 def archive_important_files(experiment_path):
     to_save = [
         "ODELoss.png",
-        "IdealFunctionsForPredictedVariables.png",
+        "IdealFunctionsForPredictedVars.png",
         "Result.png",
         "TBegLoss.png",
         "ReferenceLoss.png",

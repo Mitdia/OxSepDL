@@ -147,7 +147,7 @@ def plot_main_peak_error(model, references, t_shift: float, melting_temp: float,
 
 
 def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params: dict, options: dict,
-                                            verbose: bool = False, filename="IdealFunctionsForPredictedVariables.png"):
+                                            verbose: bool = False, filename="IdealFunctionsForPredictedVars.png"):
     num_oxides = len(oxide_params)
     t_shift = options["t_shift"]
     record = [elem.item() for elem in trainable_variables]
