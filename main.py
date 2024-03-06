@@ -7,14 +7,20 @@ from model import model_multiple_solutions
 from input_data_reader import get_oxide_params, read_data
 from utils.animator import animate_solution_history, animate_trainable_variables_history
 from utils.saver import save_options, save_input_data, archive_important_files, setup_experiment
+from utils.funcgen import generate_random_solution
 
-config.set_random_seed(42)
+config.set_random_seed(57)
 config.set_default_float("float64")
 torch.set_default_device('cuda')
 
 experiment_dir = setup_experiment()
+params = get_oxide_params("ShHa15", ["Ti3O5", "SiO2", "Al2O3"])
+generated_solutions = [generate_random_solution(params, [10, 10, 20]) for _ in range(5)]
+# oxide_params = get_oxide_params("ShHa15", ["Ti3O5", "SiO2", "Al2O3"])
+oxide_params = get_oxide_params("ShHa15", ["SiO2", "Al2O3"])  # "MnO", "TiO2",
+# solution_values_array = [(reference, t_grid) for (reference, t_grid, _) in generated_solutions]
+# data_path_array = ["5 random synthetic references with four peaks"]
 solution_values_array, data_path_array = read_data()
-oxide_params = get_oxide_params("ShHa15", ["SiO2", "Al2O3"])
 num_oxides = len(oxide_params)
 num_ref = len(solution_values_array)
 
@@ -23,7 +29,9 @@ model, external_trainable_variables, callbacks = model_multiple_solutions(soluti
 loss_weights = ([options["res_loss_weight"]] * num_oxides +
                 [options["tbeg_loss_weight"]] * num_oxides +
                 [options["ref_loss_weight"] / num_ref, options["mpeak_loss_weight"] / num_ref] * num_ref)
-model.compile("adam", lr=options["learning_rate"], loss_weights=loss_weights,
+model.compile("adam", lr=options["learning_rate"],
+              # loss=["MSE"] * (num_oxides * 2) + ["mse"] * (num_ref * 2),
+              loss_weights=loss_weights,
               external_trainable_variables=external_trainable_variables,
               decay=options["decay"])
 loss_history, train_state = model.train(iterations=options["iter_num"], callbacks=callbacks)

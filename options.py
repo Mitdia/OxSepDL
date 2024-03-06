@@ -3,7 +3,7 @@ from deepxde import config
 from functools import partial
 
 
-def get_k_indirect(e_var, t_max, _):
+def get_k_indirect(e_var, t_max, _, k_init):
     """
     Calculate K from the trainable variables
     __________
@@ -22,7 +22,7 @@ def get_k_indirect(e_var, t_max, _):
     return e_var / t_max + torch.log(e_var / t_max ** 2)
 
 
-def get_k_direct(_, __, k_var, k_scale):
+def get_k_direct(_, __, k_var, k_scale, k_init):
     """
     Calculate K from the trainable variables
     __________
@@ -36,12 +36,12 @@ def get_k_direct(_, __, k_var, k_scale):
     Returns
     _______
     K : double
-        K = k_var * k_scale
+        K = k_init * (10 ** torch.tanh(k_var))
     """
-    return k_var * k_scale
+    return k_init * (10 ** torch.tanh(k_var))
 
 
-def get_e(e_var, e_scale):
+def get_e(e_var, e_scale, e_init):
     """
     Calculate E from the trainable variable e_var
     __________
@@ -55,9 +55,9 @@ def get_e(e_var, e_scale):
     Returns
     _______
     E : double
-        E = 10 ^ (5 + e_var)
+        E = 10 ^ (5 + torch.tanh(e_var))
     """
-    return 10 ** (5 + e_var)
+    return e_init * (10 ** torch.tanh(e_var))
 
 
 def get_t_max(t_max, tmax_scale, t_max_init=None):
@@ -69,14 +69,17 @@ def get_t_max(t_max, tmax_scale, t_max_init=None):
     t_max : double
         trainable variable corresponding to temperature of maximum extortion
     tmax_scale : double
-        The hyperparameter corresponding to temperature of maximum extortion
+        The hyperparameter corresponding to temperature of maximum extortion;
+        It defines how far the maximum temperature can diverge from the initial value
+    t_max_init : double
+        The initial value of the temperature of maximum extortion
     _______
     Returns
     _______
     T_max : double
-        T_max = t_max * tmax_scale
+        T_max = t_max_init + (torch.tanh(t_max) * tmax_scale)
     """
-    return t_max_init + t_max * tmax_scale
+    return t_max_init + (torch.tanh(t_max) * tmax_scale)
 
 
 def temperature(t, t_shift):
@@ -114,19 +117,20 @@ def temperature_derivative(_):
 
 options = {
     "direct_tmax": True,
-    "learning_rate": 1e-5,
+    "learning_rate": 1e-4,
     "res_loss_weight": 1e+4,
-    "tbeg_loss_weight": 1e+4,
-    "ref_loss_weight": 5e+0,
+    "tbeg_loss_weight": 1e+2,
+    "ref_loss_weight": 1e+0,
     "mpeak_loss_weight": 0e-1,
-    "iter_num": 150000,
-    "decay": ("step", 50000, 0.9),
+    "iter_num": 100000,
+    "decay": ("step", 5000, 0.9),
     "e_var_init": 1e+5,
     "e_scale": 5,
-    "tmax_scale": 5e+1,
+    "tmax_scale": 50,
     "k_scale": 1e+1,
     "t_shift": 1400,
     "melting_temp": 1500,
+    "ode_loss_enhancer_power": 0,
     "random_seed": config.random_seed,
 }
 
