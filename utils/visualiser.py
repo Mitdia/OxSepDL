@@ -155,15 +155,15 @@ def plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params: d
     t_grid = np.linspace(0, 800, 1000)
     for i, (oxide_name, oxide) in enumerate(oxide_params.items()):
 
-        e_var = options["e_var_init"]
-        k_var = e_var / oxide["Tm"] + np.log(e_var / oxide["Tm"] ** 2)
-        oxide_init = create_oxide_function(k_var, e_var, 10, oxide["Tm"] - t_shift, t_shift=t_shift)
+        e_var_init = options["e_var_init"]
+        k_var_init = e_var_init / oxide["Tm"] + np.log(e_var_init / oxide["Tm"] ** 2)
+        oxide_init = create_oxide_function(k_var_init, e_var_init, 10, oxide["Tm"] - t_shift, t_shift=t_shift)
         values = oxide_init(t_grid)
         plt.plot(t_grid, values, label=f"Init {oxide_name}")
 
-        e_var = options["get_e"](torch.Tensor([record[i + num_oxides]]))
+        e_var = options["get_e"](torch.Tensor([record[i + num_oxides]]), e_init=e_var_init)
         t_max_var = options["get_t_max"](torch.Tensor([record[i]]), t_max_init=oxide["Tm"])
-        k_var = options["get_k"](e_var, t_max_var, torch.Tensor([record[i]])).item()
+        k_var = options["get_k"](e_var, t_max_var, torch.Tensor([record[i]]), k_init=k_var_init).item()
         e_var = e_var.item()
         t_max_var = t_max_var.item()
 

@@ -63,10 +63,16 @@ def animate_trainable_variables_history(experiment_name, filename, oxides, optio
 
     fig, ax = plt.subplots()
     lines = []
+    get_e_functions = []
+    get_k_functions = []
+    get_t_max_functions = []
     for i, (oxide_name, oxide) in enumerate(oxides.items()):
-        e_var = options["e_var_init"]
-        k_var = e_var / oxide["Tm"] + np.log(e_var / oxide["Tm"] ** 2)
-        oxide_init = create_oxide_function(k_var, e_var, 10, oxide["Tm"] - t_shift, t_shift=t_shift)
+        e_var_init = options["e_var_init"]
+        k_var_init = e_var_init / oxide["Tm"] + np.log(e_var_init / oxide["Tm"] ** 2)
+        oxide_init = create_oxide_function(k_var_init, e_var_init, 10, oxide["Tm"] - t_shift, t_shift=t_shift)
+        get_e_functions.append(partial(options["get_e"], e_init=e_var_init))
+        get_k_functions.append(partial(options["get_k"], k_init=k_var_init))
+        get_t_max_functions.append(partial(options["get_t_max"], t_max_init=oxide["Tm"]))
         values = oxide_init(t_grid)
         plt.plot(t_grid, values, label=f"Init {oxide_name}")
         lines.append(plt.plot(t_grid, values, label=oxide_name)[0])
@@ -83,9 +89,9 @@ def animate_trainable_variables_history(experiment_name, filename, oxides, optio
     def update(frame):
         record = variables_history[frame]
         for j, (_, oxide_to_update) in enumerate(oxides.items()):
-            e_variable = options["get_e"](torch.Tensor([record[j + num_oxides]]))
-            t_max_var = options["get_t_max"](torch.Tensor([record[j]]), t_max_init=oxide_to_update["Tm"])
-            k_variable = options["get_k"](e_variable, t_max_var, torch.Tensor([record[j]])).item()
+            e_variable = get_e_functions[j](torch.Tensor([record[j + num_oxides]]))
+            t_max_var = get_t_max_functions[j](torch.Tensor([record[j]]))
+            k_variable = get_k_functions[j](e_variable, t_max_var, torch.Tensor([record[j]])).item()
             e_variable = e_variable.item()
             t_max_var = t_max_var.item()
             if options["direct_tmax"]:
