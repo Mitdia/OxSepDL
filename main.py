@@ -16,8 +16,8 @@ torch.set_default_device('cuda')
 experiment_dir = setup_experiment()
 params = get_oxide_params("ShHa15", ["Ti3O5", "SiO2", "Al2O3"])
 generated_solutions = [generate_random_solution(params, [10, 10, 20]) for _ in range(5)]
-# oxide_params = get_oxide_params("ShHa15", ["Ti3O5", "SiO2", "Al2O3"])
-oxide_params = get_oxide_params("ShHa15", ["SiO2", "Al2O3"])  # "MnO", "TiO2",
+# oxide_params = get_oxide_params("ShHa15", ["Ti3O5", "Al2O3"])
+oxide_params = get_oxide_params("ShHa15", ["MnO", "SiO2", "Al2O3"])  # "MnO", "TiO2",
 # solution_values_array = [(reference, t_grid) for (reference, t_grid, _) in generated_solutions]
 # data_path_array = ["5 random synthetic references with four peaks"]
 solution_values_array, data_path_array = read_data()

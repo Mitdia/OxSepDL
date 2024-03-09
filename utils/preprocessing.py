@@ -40,3 +40,27 @@ def find_region_of_main_peak(values_array):
         if i_end_max is None or i_end > i_end_max:
             i_end_max = i_end
     return i_beg_min, i_end_max
+
+
+def normalize_real_values(references):
+    max_value = -np.inf
+    for (values, _) in references:
+        max_value = max(max_value, max(values))
+
+    new_references = []
+    for (values, temp) in references:
+        new_references.append((values / max_value, temp))
+
+    return new_references, max_value
+
+
+def convert_grid_to_unified(references, grid=None, num_points=None):
+    if grid is None and num_points is not None:
+        grid = np.linspace(1400, 2200, num_points)
+    elif grid is None and num_points is None:
+        raise TypeError("Both grid and num_points can't be none simultaneously")
+    new_references = []
+    for (values, temp) in references:
+        new_values = np.interp(grid, temp, values)
+        new_references.append((new_values, grid))
+    return new_references

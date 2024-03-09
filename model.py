@@ -4,14 +4,13 @@ import torch
 import os
 from functools import partial
 from torch.nn.functional import sigmoid
-from utils.preprocessing import find_region_of_main_peak
+from utils.preprocessing import find_region_of_main_peak, normalize_real_values, convert_grid_to_unified
 from utils.callbacks import IntervalWithSmartResampling, SolutionHistory
 
 
 def model_multiple_solutions(solution_values_array, oxides, options, experiment_path, pretrained_model=None):
     oxide_names = oxides.keys()
     oxides = list(oxides.values())
-
     # initialize external trainable variables
     num_oxides = len(oxides)
     get_e_functions = []
@@ -61,17 +60,21 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         return oxides_odes + initial_condition_checks
 
     def transform_output(_, v):
-        oxide_functions = [torch.exp(v[:, j:j + 1]) for j in range(num_oxides)]
-        oxide_functions_sum = torch.zeros_like(oxide_functions[0])
-        for j in range(num_oxides):
-            oxide_functions_sum += oxide_functions[j]
-        return torch.stack(oxide_functions + [oxide_functions_sum], axis=1).reshape(-1, num_oxides + 1)
+        oxide_functions = torch.exp(v)
+        oxide_functions_sum = torch.sum(oxide_functions, dim=-1, keepdim=True)
+        return torch.concat([oxide_functions, oxide_functions_sum], dim=-1)
+
+    def transform_input(t):
+        return t / 800
 
     geom = dde.geometry.Interval(0, 800)
 
     discrete_conditions = []
-    roi_beg, roi_end = find_region_of_main_peak(solution_values_array)
-    for solution, temp in solution_values_array:
+    references, max_value = normalize_real_values(solution_values_array)
+    # references = convert_grid_to_unified(references, num_points=1000)
+    roi_beg, roi_end = find_region_of_main_peak(references)
+
+    for solution, temp in references:
         mask = temp > options["melting_temp"]
         shifted_temp = temp - options["t_shift"]
         discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask], -1),
@@ -89,7 +92,8 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         net = dde.nn.FNN([1] + [50] * 3 + [num_oxides], ["tanh"] * 3 + ["relu"], "Glorot uniform")
 
     net.apply_output_transform(transform_output)
-    model = dde.Model(data, net)
+    net.apply_feature_transform(transform_input)
+    model = OxSepModel(data, net, max_value)
     model.data.geom = IntervalWithSmartResampling(0, 800, model, num_oxides)
     model.data.train_distribution = "residual-based"
     if options["direct_tmax"]:
@@ -103,73 +107,19 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
                  SolutionHistory(os.path.join(experiment_path, "SolutionHistory"), 0, 800, 100, period=400)]
     return model, external_trainable_variables, callbacks
 
+
+class OxSepModel(dde.Model):
+
+    def __init__(self, data, net, max_value):
+        self.max_value = max_value
+        super().__init__(data, net)
+
+    def predict(self, x, operator=None, callbacks=None):
+        output = super().predict(x, operator=operator, callbacks=callbacks)
+        if operator is None:
+            output *= self.max_value
+        return output
+
+
+# class ODEWithReferences(dde.data.PDE):
 #
-# def model_with_constant_external_variables(solution_values_array, oxides, options, experiment_path):
-#     oxides = list(oxides.values())
-#     num_oxides = len(oxides)
-#     # initialize external trainable variables
-#
-#     e_estimates = [options["e_var_init"] for _ in range(num_oxides)]
-#     k_estimates = [e_estimates[j] / oxides[j]["Tm"] + np.log(e_estimates[j] / (oxides[j]["Tm"]) ** 2) for j in
-#                    range(num_oxides)]
-#
-#     def f(t, k, e):
-#         """f(t) = K - E/T(t)"""
-#         return k - e / options["temperature"](t)
-#
-#     def df_t(t, e):
-#         """f'(t) = (E * T'(t)) / (T(t))^2"""
-#         return (e * options["temperature_derivative"](t)) / (options["temperature"](t) ** 2)
-#
-#     def ode(t, v):
-#         """ode system: v'(t) = v(t)(df_t - exp(f(t)))"""
-#         oxides_odes = []
-#         initial_condition_checks = []
-#         for j, oxide in enumerate(oxides):
-#             oxide_function = v[:, j:j + 1]
-#             e_var = e_estimates[j]
-#             k_var = k_estimates[j]
-#             oxides_functions_derivative = dde.grad.jacobian(v, t, i=j, j=0)
-#             modifier = df_t(t, e_var) - torch.exp(f(t, k_var, e_var))
-#             enhancer = oxide_function ** options["ode_loss_enhancer_power"]
-#             oxides_ode = (oxides_functions_derivative - oxide_function * modifier) * enhancer
-#             oxides_odes.append(oxides_ode)
-#
-#             modifier = sigmoid(t - oxide["Tb"] + options["t_shift"])
-#             reversed_modifier = sigmoid(-t - oxide["Tb"] + 2 * oxide["Tm"] - options["t_shift"])
-#             initial_condition_check = oxide_function * (1 - modifier * reversed_modifier)
-#             initial_condition_checks.append(initial_condition_check)
-#
-#         return oxides_odes + initial_condition_checks
-#
-#     def transform_output(_, v):
-#         oxide_functions = [torch.exp(v[:, j:j + 1]) for j in range(num_oxides)]
-#         oxide_functions_sum = torch.zeros_like(oxide_functions[0])
-#         for j in range(num_oxides):
-#             oxide_functions_sum += oxide_functions[j]
-#         return torch.stack(oxide_functions + [oxide_functions_sum], axis=1).reshape(-1, num_oxides + 1)
-#
-#     geom = dde.geometry.Interval(0, 800)
-#
-#     discrete_conditions = []
-#     roi_beg, roi_end = find_region_of_main_peak(solution_values_array)
-#     for solution, temp in solution_values_array:
-#         mask = temp > options["melting_temp"]
-#         shifted_temp = temp - options["t_shift"]
-#         discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask], -1),
-#                                                        np.expand_dims(solution[mask], -1),
-#                                                        component=num_oxides))
-#         discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask][roi_beg:roi_end + 1], -1),
-#                                                        np.expand_dims(solution[mask][roi_beg:roi_end + 1], -1),
-#                                                        component=num_oxides))
-#
-#     data = dde.data.PDE(geom, ode, discrete_conditions, 1000, 0, train_distribution="pseudo")
-#     net = dde.nn.pytorch.FNN([1] + [50] * 3 + [num_oxides], ["tanh"] * 3 + ["relu"], "Glorot uniform")
-#
-#     net.apply_output_transform(transform_output)
-#     model = dde.Model(data, net)
-#     model.data.geom = IntervalWithSmartResampling(0, 800, model, num_oxides)
-#     model.data.train_distribution = "residual-based"
-#     resampler = dde.callbacks.PDEPointResampler(period=1000)
-#     callbacks = [resampler, SolutionHistory(os.path.join(experiment_path, "SolutionHistory"), 0, 800, 100, period=400)]
-#     return model, [], callbacks

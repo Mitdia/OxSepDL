@@ -118,8 +118,8 @@ def temperature_derivative(_):
 options = {
     "direct_tmax": True,
     "learning_rate": 1e-4,
-    "res_loss_weight": 1e+4,
-    "tbeg_loss_weight": 1e+2,
+    "res_loss_weight": 5e+2,
+    "tbeg_loss_weight": 5e+2,
     "ref_loss_weight": 1e+0,
     "mpeak_loss_weight": 0e-1,
     "iter_num": 100000,

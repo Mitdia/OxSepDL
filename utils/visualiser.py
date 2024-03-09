@@ -104,12 +104,13 @@ def plot_reference_error(model, num_oxides, references, t_shift: float, loss_his
         temp_shifted = temp - t_shift
         grid = np.expand_dims(temp_shifted[mask], -1)
         predicted_values_for_reference = torch.Tensor(model.predict(grid))
-        error = model.data.bcs[2 * i].error(0, 0, predicted_values_for_reference.cuda(), 0, len(temp_shifted[mask]))
+        # error = model.data.bcs[2 * i].error(0, 0, predicted_values_for_reference.cuda(), 0, len(temp_shifted[mask]))
+        error = torch.Tensor(reference[mask]) - predicted_values_for_reference[:, num_oxides]
         mean_error = torch.mean((torch.Tensor(reference[mask]) - predicted_values_for_reference[:, num_oxides]) ** 2)
         mean_error_calculated = loss_history.loss_test[-1][2 * num_oxides + 2 * i] / (ref_loss_weight / num_references)
         if plot_references:
             plt.plot(grid, reference[mask], label=f"{i + 1} reference")
-        plt.plot(grid, -error.cpu(),
+        plt.plot(grid, error.cpu(),
                  label=f"{i + 1} reference loss: {mean_error:.4} and calculated loss {mean_error_calculated:.4}")
     plt.legend()
     plt.grid()
