@@ -104,7 +104,6 @@ def plot_reference_error(model, num_oxides, references, t_shift: float, loss_his
         temp_shifted = temp - t_shift
         grid = np.expand_dims(temp_shifted[mask], -1)
         predicted_values_for_reference = torch.Tensor(model.predict(grid))
-        # error = model.data.bcs[2 * i].error(0, 0, predicted_values_for_reference.cuda(), 0, len(temp_shifted[mask]))
         error = torch.Tensor(reference[mask]) - predicted_values_for_reference[:, num_oxides]
         mean_error = torch.mean((torch.Tensor(reference[mask]) - predicted_values_for_reference[:, num_oxides]) ** 2)
         mean_error_calculated = loss_history.loss_test[-1][2 * num_oxides + 2 * i] / (ref_loss_weight / num_references)
@@ -223,8 +222,8 @@ def plot_all(model, oxide_params, references, loss_history, trainable_variables,
     plot_ode_residual(model, oxide_params, verbose, os.path.join(experiment_path, "ODELoss.png"))
     plot_reference_error(model, len(oxide_params), references, t_shift, loss_history, options["ref_loss_weight"],
                          melting_temp, verbose, os.path.join(experiment_path, "ReferenceLoss.png"))
-    plot_main_peak_error(model, references, t_shift, melting_temp,
-                         verbose, os.path.join(experiment_path, "MaxPeakLoss.png"))
+    # plot_main_peak_error(model, references, t_shift, melting_temp,
+    #                      verbose, os.path.join(experiment_path, "MaxPeakLoss.png"))
     plot_ideal_functions_for_predicted_vars(trainable_variables, oxide_params, options, verbose,
                                             os.path.join(experiment_path, "IdealFunctionsForPredictedVars.png"))
     plot_tbeg_loss(model, oxide_params, t_shift, verbose, os.path.join(experiment_path, "TBegLoss.png"))
