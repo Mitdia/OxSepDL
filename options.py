@@ -130,6 +130,7 @@ options = {
     "k_scale": 1e+1,
     "t_shift": 1400,
     "normalized": True,
+    "normalized_input": False,
     "last_activation": torch.nn.functional.softplus,
     "melting_temp": 1500,
     "ode_loss_enhancer_power": 0,

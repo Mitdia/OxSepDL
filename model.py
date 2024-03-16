@@ -95,6 +95,8 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         net = dde.nn.FNN([1] + [50] * 3 + [num_oxides], ["tanh"] * 3 + ["relu"], "Glorot uniform")
 
     net.apply_output_transform(transform_output)
+    if options["normalized_input"]:
+        net.apply_feature_transform(transform_input)
     if options["normalized"]:
         model = OxSepModel(data, net, max_value)
     else:
