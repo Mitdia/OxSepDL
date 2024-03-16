@@ -11,26 +11,27 @@ from utils.ddeClassOverridder import ODEWithReferences, OxSepModel
 
 def model_multiple_solutions(solution_values_array, oxides,
                              options, experiment_path,
-                             trainable_vars_init,  pretrained_model=None):
-    oxide_names = oxides.keys()
+                             trainable_vars_init=None,  pretrained_model=None):
+
     oxides = list(oxides.values())
-    # initialize external trainable variables
     num_oxides = len(oxides)
+    if trainable_vars_init is None:
+        trainable_vars_init = [0] * num_oxides * 2
     get_e_functions = []
     get_k_functions = []
     get_t_max_functions = []
     k_variables = []
     e_variables = []
     t_max_variables = []
-    for ox in oxides:
+    for j, ox in enumerate(oxides):
         e_init = options["e_var_init"]
         k_init = e_init / ox["Tm"] + np.log(e_init / (ox["Tm"]) ** 2)
         get_e_functions.append(partial(options["get_e"], e_init=e_init))
         get_k_functions.append(partial(options["get_k"], k_init=k_init))
         get_t_max_functions.append(partial(options["get_t_max"], t_max_init=ox["Tm"]))
-        k_variables.append(dde.Variable(0, dtype=torch.double))
-        t_max_variables.append(dde.Variable(0, dtype=torch.double))
-        e_variables.append(dde.Variable(0, dtype=torch.double))
+        k_variables.append(dde.Variable(trainable_vars_init[j], dtype=torch.double))
+        t_max_variables.append(dde.Variable(trainable_vars_init[j], dtype=torch.double))
+        e_variables.append(dde.Variable(trainable_vars_init[num_oxides + j], dtype=torch.double))
 
     def f(t, k, e):
         """f(t) = K - E/T(t)"""
