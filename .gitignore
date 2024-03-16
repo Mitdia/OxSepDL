@@ -2,6 +2,7 @@
 /.idea/
 /Preprocessing
 /Experiments
+/Models
 *.dat
 *.o
 *.so
