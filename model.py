@@ -60,7 +60,7 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         return oxides_odes + initial_condition_checks
 
     def transform_output(_, v):
-        oxide_functions = torch.exp(v)
+        oxide_functions = options["last_activation"](v)
         oxide_functions_sum = torch.sum(oxide_functions, dim=-1, keepdim=True)
         return torch.concat([oxide_functions, oxide_functions_sum], dim=-1)
 
