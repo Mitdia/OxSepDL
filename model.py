@@ -48,13 +48,13 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
             k_var = get_k_functions[j](e_var, t_max_var, k_variables[j])
             oxides_functions_derivative = dde.grad.jacobian(v, t, i=j, j=0)
             modifier = df_t(t, e_var) - torch.exp(f(t, k_var, e_var))
-            enhancer = oxide_function ** options["ode_loss_enhancer_power"]
-            oxides_ode = (oxides_functions_derivative - oxide_function * modifier) * enhancer
-            oxides_odes.append(oxides_ode)
-
-            modifier = sigmoid(t - oxide["Tb"] + options["t_shift"])
+            direct_modifier = sigmoid(t - oxide["Tb"] + options["t_shift"])
             reversed_modifier = sigmoid(-t - oxide["Tb"] + 2 * oxide["Tm"] - options["t_shift"])
-            initial_condition_check = oxide_function * (1 - modifier * reversed_modifier)
+            region_modifier = direct_modifier * reversed_modifier
+            enhancer = oxide_function ** options["ode_loss_enhancer_power"]
+            oxides_ode = (oxides_functions_derivative - oxide_function * modifier) * enhancer * region_modifier
+            oxides_odes.append(oxides_ode)
+            initial_condition_check = oxide_function * (1 - region_modifier)
             initial_condition_checks.append(initial_condition_check)
 
         return oxides_odes + initial_condition_checks
