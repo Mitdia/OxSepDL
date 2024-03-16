@@ -13,11 +13,12 @@ config.set_random_seed(57)
 config.set_default_float("float64")
 torch.set_default_device('cuda')
 
-experiment_dir = setup_experiment()
+experiment_name = "BaseModel"
+experiment_dir = setup_experiment(experiment_name)
 params = get_oxide_params("ShHa15", ["Ti3O5", "SiO2", "Al2O3"])
 generated_solutions = [generate_random_solution(params, [10, 10, 20]) for _ in range(5)]
 # oxide_params = get_oxide_params("ShHa15", ["Ti3O5", "Al2O3"])
-oxide_params = get_oxide_params("ShHa15", ["MnO", "SiO2", "Al2O3"])  # "MnO", "TiO2",
+oxide_params = get_oxide_params("ShHa15", ["MnO", "MnSiO3", "SiO2", "Al2O3", "MgO"])  # "MnO", "TiO2",
 # solution_values_array = [(reference, t_grid) for (reference, t_grid, _) in generated_solutions]
 # data_path_array = ["5 random synthetic references with four peaks"]
 solution_values_array, data_path_array = read_data()
@@ -36,6 +37,7 @@ model.compile("adam", lr=options["learning_rate"],
               decay=options["decay"])
 loss_history, train_state = model.train(iterations=options["iter_num"], callbacks=callbacks)
 
+model.save(os.path.join("Models", experiment_name))
 
 plot_all(model, oxide_params, solution_values_array, loss_history,
          external_trainable_variables, options, experiment_dir)
