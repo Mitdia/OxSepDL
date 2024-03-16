@@ -36,8 +36,9 @@ all_oxide_params_ShHa15 = {
 }
 
 
-def read_data(directory_path=os.path.join("Data", "ShHa"), ref_num=5):
-    data_path_array = np.random.choice(os.listdir(directory_path), size=ref_num, replace=False)
+def read_data(directory_path=os.path.join("Data", "ShHa"), ref_num=5, data_path_array=None):
+    if data_path_array is None:
+        data_path_array = np.random.choice(os.listdir(directory_path), size=ref_num, replace=False)
     references = []
     for path in data_path_array:
         data = pd.read_csv(os.path.join(directory_path, path))
