@@ -70,8 +70,11 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
     geom = dde.geometry.Interval(0, 800)
 
     discrete_conditions = []
-    references, max_value = normalize_real_values(solution_values_array)
-    # references = convert_grid_to_unified(references, num_points=1000)
+    if options["normalized"]:
+        references, max_value = normalize_real_values(solution_values_array)
+    else:
+        references = solution_values_array
+        max_value = 1
     roi_beg, roi_end = find_region_of_main_peak(references)
 
     for solution, temp in references:
@@ -92,8 +95,10 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         net = dde.nn.FNN([1] + [50] * 3 + [num_oxides], ["tanh"] * 3 + ["relu"], "Glorot uniform")
 
     net.apply_output_transform(transform_output)
-    net.apply_feature_transform(transform_input)
-    model = OxSepModel(data, net, max_value)
+    if options["normalized"]:
+        model = OxSepModel(data, net, max_value)
+    else:
+        model = dde.Model(data, net)
     model.data.geom = IntervalWithSmartResampling(0, 800, model, num_oxides)
     model.data.train_distribution = "residual-based"
     if options["direct_tmax"]:
