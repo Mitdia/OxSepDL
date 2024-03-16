@@ -6,9 +6,12 @@ from functools import partial
 from torch.nn.functional import sigmoid
 from utils.preprocessing import find_region_of_main_peak, normalize_real_values, convert_grid_to_unified
 from utils.callbacks import IntervalWithSmartResampling, SolutionHistory
+from utils.ddeClassOverridder import ODEWithReferences, OxSepModel
 
 
-def model_multiple_solutions(solution_values_array, oxides, options, experiment_path, pretrained_model=None):
+def model_multiple_solutions(solution_values_array, oxides,
+                             options, experiment_path,
+                             trainable_vars_init,  pretrained_model=None):
     oxide_names = oxides.keys()
     oxides = list(oxides.values())
     # initialize external trainable variables
@@ -76,18 +79,29 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
         references = solution_values_array
         max_value = 1
     roi_beg, roi_end = find_region_of_main_peak(references)
-
+    if options["reduced_points"]:
+        references = convert_grid_to_unified(references, num_points=500)
     for solution, temp in references:
         mask = temp > options["melting_temp"]
         shifted_temp = temp - options["t_shift"]
-        discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask], -1),
-                                                       np.expand_dims(solution[mask], -1),
-                                                       component=num_oxides))
-        discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask][roi_beg:roi_end + 1], -1),
-                                                       np.expand_dims(solution[mask][roi_beg:roi_end + 1], -1),
-                                                       component=num_oxides))
+        if options["reduced_points"]:
+            discrete_conditions.append(np.expand_dims(solution[mask], -1))
+        else:
+            discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask], -1),
+                                                           np.expand_dims(solution[mask], -1),
+                                                           component=num_oxides))
+            discrete_conditions.append(dde.icbc.PointSetBC(np.expand_dims(shifted_temp[mask][roi_beg:roi_end + 1], -1),
+                                                           np.expand_dims(solution[mask][roi_beg:roi_end + 1], -1),
+                                                           component=num_oxides))
 
-    data = dde.data.PDE(geom, ode, discrete_conditions, 1000, 0, train_distribution="pseudo")
+    if options["reduced_points"]:
+        data = ODEWithReferences(geom, ode, [], 1000, 0,
+                                 train_distribution="pseudo",
+                                 reference_grid=np.expand_dims(references[0][1], -1),
+                                 reference_values=discrete_conditions,
+                                 mpeak_beg=roi_beg, mpeak_end=roi_end)
+    else:
+        data = dde.data.PDE(geom, ode, discrete_conditions, 1000, 0, train_distribution="pseudo")
     if pretrained_model is not None:
         net = pretrained_model.net
     else:
@@ -113,20 +127,3 @@ def model_multiple_solutions(solution_values_array, oxides, options, experiment_
     callbacks = [resampler, variable,
                  SolutionHistory(os.path.join(experiment_path, "SolutionHistory"), 0, 800, 100, period=400)]
     return model, external_trainable_variables, callbacks
-
-
-class OxSepModel(dde.Model):
-
-    def __init__(self, data, net, max_value):
-        self.max_value = max_value
-        super().__init__(data, net)
-
-    def predict(self, x, operator=None, callbacks=None):
-        output = super().predict(x, operator=operator, callbacks=callbacks)
-        if operator is None:
-            output *= self.max_value
-        return output
-
-
-# class ODEWithReferences(dde.data.PDE):
-#
