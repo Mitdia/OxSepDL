@@ -52,8 +52,8 @@ def model_multiple_solutions(solution_values_array, oxides,
             k_var = get_k_functions[j](e_var, t_max_var, k_variables[j])
             oxides_functions_derivative = dde.grad.jacobian(v, t, i=j, j=0)
             modifier = df_t(t, e_var) - torch.exp(f(t, k_var, e_var))
-            direct_modifier = sigmoid(t - oxide["Tb"] + options["t_shift"])
-            reversed_modifier = sigmoid(-t - oxide["Tb"] + 2 * oxide["Tm"] - options["t_shift"])
+            direct_modifier = sigmoid(t + (oxide["Tm"] - oxide["Tb"]) - t_max_var + options["t_shift"])
+            reversed_modifier = sigmoid(-t + (oxide["Tm"] - oxide["Tb"]) + t_max_var - options["t_shift"])
             region_modifier = direct_modifier * reversed_modifier
             enhancer = oxide_function ** options["ode_loss_enhancer_power"]
             oxides_ode = (oxides_functions_derivative - oxide_function * modifier) * enhancer * region_modifier
