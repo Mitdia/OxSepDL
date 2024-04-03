@@ -36,6 +36,32 @@ all_oxide_params_ShHa15 = {
 }
 
 
+all_oxide_params_ShHaNew = {
+    "Cr2O3": {"Tb": 1138, "Tm": 1268},
+    "TiO": {"Tb": 1350, "Tm": 1480},
+    "MnO": {"Tb": 1357, "Tm": 1487},
+    "Ti2O3": {"Tb": 1489, "Tm": 1619},
+    "TiO2": {"Tb": 1490, "Tm": 1620},
+    "Ti3O5": {"Tb": 1502, "Tm": 1633},
+    "MnSiO3": {"Tb": 1508, "Tm": 1639},
+    "Mn2SiO4": {"Tb": 1523, "Tm": 1653},
+    "SiO2": {"Tb": 1587, "Tm": 1718},
+    "Al2TiO5": {"Tb": 1697, "Tm": 1827},
+    "Al2SiO5": {"Tb": 1727, "Tm": 1857},
+    "Al6Si2O13": {"Tb": 1753, "Tm": 1884},
+    "MnAl2O4": {"Tb": 1772, "Tm": 1902},
+    "Al2O3": {"Tb": 1799, "Tm": 1930},
+    "MgSiO3": {"Tb": 1804, "Tm": 1934},
+    "MgAl2O4": {"Tb": 1852, "Tm": 1982},
+    "CaAl4O7": {"Tb": 1915, "Tm": 2045},
+    "Mg2SiO4": {"Tb": 1923, "Tm": 2054},
+    "CaAl2O4": {"Tb": 1956, "Tm": 2086},
+    "Ca2SiO4": {"Tb": 2093, "Tm": 2223},
+    "MgO": {"Tb": 2107, "Tm": 2237},
+    "CaO": {"Tb": 2165, "Tm": 2295},
+}
+
+
 def read_data(directory_path=os.path.join("Data", "ShHaAligned"), files_names=None, ref_num=5):
     if files_names is None:
         files_names = np.random.choice(os.listdir(directory_path), size=ref_num, replace=False)
@@ -52,8 +78,10 @@ def get_oxide_params(material_type, oxide_names):
         all_oxide_params = all_oxide_params_ShHa15
     elif material_type.lower() == "sg1":
         all_oxide_params = all_oxide_params_SG1
+    elif material_type.lower() == "shhanew":
+        all_oxide_params = all_oxide_params_ShHaNew
     else:
-        raise AttributeError("Only SG1 and ShHa15 material_type is supported!")
+        raise AttributeError("Only SG1, ShHa15 and ShHaNew material_type is supported!")
     for oxide_name in oxide_names:
         if oxide_name in all_oxide_params:
             oxide_params[oxide_name] = all_oxide_params[oxide_name]
