@@ -15,6 +15,15 @@ class OxSepModel(dde.Model):
             output *= self.max_value
         return output
 
+    def restore(self, save_path, device=None, verbose=0, restore_optimizer=False):
+        if device is not None:
+            checkpoint = torch.load(save_path, map_location=torch.device(device))
+        else:
+            checkpoint = torch.load(save_path)
+        self.net.load_state_dict(checkpoint["model_state_dict"])
+        if restore_optimizer:
+            self.opt.load_state_dict(checkpoint["optimizer_state_dict"])
+
 
 class ODEWithReferences(dde.data.PDE):
 
