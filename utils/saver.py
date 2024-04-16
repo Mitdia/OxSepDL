@@ -52,6 +52,7 @@ def archive_important_files(experiment_path):
         "train.dat",
         "parameters.txt",
         "LossHistory.png",
+        "LossHistory.txt",
         "input_data.txt",
         "SolutionHistory_x.txt",
         "SolutionHistory_y.txt",
