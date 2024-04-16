@@ -55,9 +55,9 @@ def get_e(e_var, e_scale, e_init):
     Returns
     _______
     E : double
-        E = 10 ^ (5 + torch.tanh(e_var))
+        E = E_init * (10 ** (e_scale * torch.tanh(e_var)))
     """
-    return e_init * (10 ** torch.tanh(e_var))
+    return e_init * (10 ** (e_scale * torch.tanh(e_var)))
 
 
 def get_t_max(t_max, tmax_scale, t_max_init=None):
@@ -122,20 +122,21 @@ options = {
     "tbeg_loss_weight": 1e+2,
     "ref_loss_weight": 1e+0,
     "mpeak_loss_weight": 0e-1,
-    "iter_num": 300000,
-    "decay": ("step", 10000, 0.9),
-    "e_var_init": 1e+5,
-    "e_scale": 5,
-    "tmax_scale": 50,
+    "iter_num": 200000,
+    "decay": ("step", 25000, 0.9),
+    "e_var_init": 9e+4,
+    "e_scale": 1,
+    "tmax_scale": 100,
     "k_scale": 1e+1,
     "t_shift": 1400,
     "normalized": True,
     "normalized_input": False,
     "reduced_points": False,
     "last_activation": torch.nn.functional.softplus,
-    "melting_temp": 1500,
+    "melting_temp": 1700,
     "ode_loss_enhancer_power": 0,
     "random_seed": config.random_seed,
+    "oxide_toggle": [True, True, True, True, True, True, True, True]
 }
 
 if not options["direct_tmax"]:

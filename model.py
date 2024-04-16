@@ -65,6 +65,9 @@ def model_multiple_solutions(solution_values_array, oxides,
 
     def transform_output(_, v):
         oxide_functions = options["last_activation"](v)
+        for i, include_oxide in enumerate(options["oxide_toggle"]):
+            if not include_oxide:
+                oxide_functions[:, i] = 0
         oxide_functions_sum = torch.sum(oxide_functions, dim=-1, keepdim=True)
         return torch.concat([oxide_functions, oxide_functions_sum], dim=-1)
 
