@@ -24,8 +24,8 @@ def plot_loss_history(loss_history, verbose: bool = False, filename: str = "Loss
         plt.show()
 
 
-def plot_result(model, oxides, references, t_shift: float,
-                verbose: bool = False, filename: str = "Result.png", monochrome: bool = False):
+def plot_result(model, oxides, references, t_shift: float, melting_temp: int = 1700,
+                verbose: bool = False, filename: str = "Result.png", monochrome: bool = False,):
     num_oxides = len(oxides)
     t_grid = dde.geometry.Interval(0, 800).uniform_points(1000, False)
     result = model.predict(t_grid)
@@ -37,16 +37,17 @@ def plot_result(model, oxides, references, t_shift: float,
     predicted_sum = result[:, num_oxides]
     plt.plot(t_grid, predicted_sum, ".", label=f"summ")
     for i, (reference, temp) in enumerate(references):
+        mask = temp > melting_temp
         shifted_temp = temp - t_shift
         predicted_sum = model.predict(shifted_temp.reshape(-1, 1))[:, num_oxides]
-        error = np.mean((reference - predicted_sum) ** 2)
+        error = np.mean((reference[mask] - predicted_sum[mask]) ** 2)
         plt.plot(shifted_temp[::1], reference[::1], label=f"Reference {i + 1}: loss {error:.4}")
     plt.legend()
     plt.grid()
 
     plt.title(f"Predicted peaks and references. Seed: {dde.config.random_seed}.")
     plt.xlabel("Time")
-    plt.ylabel("Oxygen")
+    plt.ylabel("CO extortion speed")
     plt.savefig(filename)
     if verbose:
         plt.show()
@@ -218,7 +219,8 @@ def plot_all(model, oxide_params, references, loss_history, trainable_variables,
     t_shift = options["t_shift"]
     melting_temp = options["melting_temp"]
     plot_loss_history(loss_history, verbose, os.path.join(experiment_path, "LossHistory.png"))
-    plot_result(model, oxide_params, references, t_shift, verbose, os.path.join(experiment_path, "Result.png"))
+    plot_result(model, oxide_params, references, t_shift, melting_temp,
+                verbose, os.path.join(experiment_path, "Result.png"))
     plot_ode_residual(model, oxide_params, verbose, os.path.join(experiment_path, "ODELoss.png"))
     plot_reference_error(model, len(oxide_params), references, t_shift, loss_history, options["ref_loss_weight"],
                          melting_temp, verbose, os.path.join(experiment_path, "ReferenceLoss.png"))
