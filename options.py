@@ -136,7 +136,7 @@ options = {
     "melting_temp": 1700,
     "ode_loss_enhancer_power": 0,
     "random_seed": config.random_seed,
-    "oxide_toggle": [True, True, True, True, True, True, True, True]
+    # "oxide_toggle": [True, True, True, True]
 }
 
 if not options["direct_tmax"]:

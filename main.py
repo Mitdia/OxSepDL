@@ -10,16 +10,16 @@ from utils.animator import animate_solution_history, animate_trainable_variables
 from utils.saver import save_options, save_input_data, archive_important_files, setup_experiment
 from utils.funcgen import generate_random_solution
 
-config.set_random_seed(57)
+config.set_random_seed(15)
 config.set_default_float("float64")
 torch.set_default_device('cuda')
 
-experiment_name = "BaseModel8OxidesCorrectTMeltingShHaNew2"
+experiment_name = "BaseModel7OxidesShHaNewNoIntervalRestrictionOnODEFixedTmaxForIntervalRestrictionLoss"
 experiment_dir = setup_experiment(experiment_name)
 # params = get_oxide_params("ShHa15", ["Ti3O5", "SiO2", "Al2O3"])
 # generated_solutions = [generate_random_solution(params, [10, 10, 20]) for _ in range(5)]
 # oxide_params = get_oxide_params("ShHa15", ["Ti3O5", "Al2O3"])
-oxide_params = get_oxide_params("ShHaNew", ["MnO", "MnSiO3", "SiO2", "Al2TiO5", "Al2O3", "MgAl2O4", "CaAl4O7", "Mg2SiO4"])
+oxide_params = get_oxide_params("ShHaNew", ["MnSiO3", "SiO2", "Al2TiO5", "Al2SiO5", "Al2O3", "MgSiO3", "Mg2SiO4"])
 # solution_values_array = [(reference, t_grid) for (reference, t_grid, _) in generated_solutions]
 # data_path_array = ["5 random synthetic references with four peaks"]
 solution_values_array, data_path_array = read_data("Data/ShHaNewAlignedSubTypes/MNRS-236234", ref_num=6)
