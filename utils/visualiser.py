@@ -29,7 +29,7 @@ def plot_result(model, oxides, references, t_shift: float, melting_temp: int = 1
     num_oxides = len(oxides)
     t_grid = dde.geometry.Interval(0, 800).uniform_points(1000, False)
     result = model.predict(t_grid)
-    fig, axs = plt.subplots(figsize=(10, 6))
+    fig, axs = plt.subplots(figsize=(8, 5))
     if monochrome:
         axs.set_prop_cycle(monochrome_settings)
     for i, oxide_name in enumerate(oxides):
@@ -41,13 +41,13 @@ def plot_result(model, oxides, references, t_shift: float, melting_temp: int = 1
         shifted_temp = temp - t_shift
         predicted_sum = model.predict(shifted_temp.reshape(-1, 1))[:, num_oxides]
         error = np.mean((reference[mask] - predicted_sum[mask]) ** 2)
-        plt.plot(shifted_temp[::1], reference[::1], label=f"Reference {i + 1}: loss {error:.4}")
+        plt.plot(shifted_temp[::1], reference[::1], label=f"Reference {i + 1}")  #: loss {error:.4}")
     plt.legend()
     plt.grid()
 
     plt.title(f"Predicted peaks and references. Seed: {dde.config.random_seed}.")
     plt.xlabel("Time")
-    plt.ylabel("CO extortion speed")
+    plt.ylabel("CO release")
     plt.savefig(filename)
     if verbose:
         plt.show()
